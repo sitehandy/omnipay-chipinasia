@@ -1,0 +1,21 @@
+HTTP/1.1 201 Created
+Content-Type: application/json
+
+{
+    "id": "purchase_test_12345",
+    "reference": "TEST123",
+    "payment_url": "https://gate.chip-in.asia/payment/purchase_test_12345",
+    "redirect_url": "https://gate.chip-in.asia/payment/purchase_test_12345",
+    "status": "pending",
+    "purchase": {
+        "currency": "MYR",
+        "total": 1000,
+        "products": [
+            {
+                "name": "Test Payment",
+                "price": 1000,
+                "quantity": 1
+            }
+        ]
+    }
+}

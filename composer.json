@@ -1,0 +1,55 @@
+{
+    "name": "sitehandy/omnipay-chipinasia",
+    "type": "library",
+    "description": "Chip-in Asia payment gateway for Omnipay payment processing library",
+    "keywords": [
+        "gateway",
+        "merchant",
+        "omnipay",
+        "pay",
+        "payment",
+        "chipinasia",
+        "chip-in-asia",
+        "purchase",
+        "malaysia"
+    ],
+    "homepage": "https://github.com/sitehandy/omnipay-chipinasia",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Site Handy",
+            "email": "contact@sitehandy.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Omnipay\\ChipInAsia\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Omnipay\\ChipInAsia\\": "tests/"
+        }
+    },
+    "require": {
+        "php": "^7.4|^8.0|^8.1|^8.2|^8.3|^8.4",
+        "omnipay/common": "^3.0"
+    },
+    "require-dev": {
+        "omnipay/tests": "^3.0",
+        "phpunit/phpunit": "^9.0|^10.0|^11.0"
+    },
+    "scripts": {
+        "test": "phpunit",
+        "test-coverage": "phpunit --coverage-html coverage",
+        "check-style": "php-cs-fixer fix --dry-run --diff",
+        "fix-style": "php-cs-fixer fix"
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.0.x-dev"
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
