@@ -1,0 +1,41 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.0.0] - 2024-12-19
+
+### Added
+- Initial stable release of Omnipay ChipInAsia payment gateway
+- Support for purchase transactions
+- Support for complete purchase (payment verification)
+- Webhook handling and verification
+- Exception handling for API errors
+- Comprehensive test suite
+- PHP 7.4+ and PHP 8.x support
+- Laravel integration examples
+- Complete documentation and usage examples
+
+### Features
+- **Gateway Integration**: Full integration with Chip-in Asia payment API
+- **Purchase Flow**: Create payment requests with redirect to Chip-in Asia
+- **Payment Completion**: Verify and complete payments after customer return
+- **Webhook Support**: Handle real-time payment notifications
+- **Error Handling**: Comprehensive exception handling for various error scenarios
+- **Multi-Currency**: Support for MYR, SGD and other supported currencies
+- **Test Mode**: Built-in test mode for development and testing
+
+### Security
+- Webhook signature verification
+- Secure API key handling
+- Input validation and sanitization
+
+### Documentation
+- Complete README with usage examples
+- Laravel integration guide
+- API reference documentation
+- Configuration options reference
+
+[1.0.0]: https://github.com/sitehandy/omnipay-chipinasia/releases/tag/v1.0.0
