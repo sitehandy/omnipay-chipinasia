@@ -53,7 +53,7 @@ For general usage instructions, please see the main [Omnipay repository](https:/
 ### Chip-in Asia Account Setup
 
 To begin, you need to:
-1. Open an account at [Chip-in Asia](https://www.chip-in.asia/)
+1. Open an account at [Chip-in Asia](https://visit.my/chipinasia)
 2. Obtain your API credentials (API Key and Brand ID)
 3. Configure your webhook endpoints
 4. Set up your return URLs
