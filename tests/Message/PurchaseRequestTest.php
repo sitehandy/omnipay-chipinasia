@@ -5,7 +5,7 @@ namespace Omnipay\ChipInAsia\Message;
 use Omnipay\Tests\TestCase;
 use Omnipay\ChipInAsia\Exception\InvalidRequestException;
 use Omnipay\ChipInAsia\Exception\ApiException;
-use Psr\Log\Test\TestLogger;
+use Omnipay\ChipInAsia\TestLogger;
 
 class PurchaseRequestTest extends TestCase
 {
@@ -171,7 +171,7 @@ class PurchaseRequestTest extends TestCase
         $this->assertEquals('https://gate.chip-in.asia/api/v1/purchases/', $endpoint);
     }
     
-    private function getValidCard()
+    public function getValidCard()
     {
         return [
             'email' => 'test@example.com',

@@ -7,7 +7,7 @@ use Omnipay\Common\Exception\OmnipayException;
 /**
  * Base exception class for Chip-in Asia gateway
  */
-class ChipInAsiaException extends OmnipayException
+class ChipInAsiaException extends \Exception implements OmnipayException
 {
     /**
      * @var array|null

@@ -4,7 +4,7 @@ namespace Omnipay\ChipInAsia\Message;
 
 use Omnipay\Tests\TestCase;
 use Omnipay\ChipInAsia\Exception\InvalidRequestException;
-use Psr\Log\Test\TestLogger;
+use Omnipay\ChipInAsia\TestLogger;
 use Symfony\Component\HttpFoundation\Request as HttpRequest;
 
 class CompletePurchaseRequestTest extends TestCase

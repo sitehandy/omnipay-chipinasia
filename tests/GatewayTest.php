@@ -4,7 +4,7 @@ namespace Omnipay\ChipInAsia;
 
 use Omnipay\Tests\GatewayTestCase;
 use Omnipay\ChipInAsia\Exception\InvalidRequestException;
-use Psr\Log\Test\TestLogger;
+use Omnipay\ChipInAsia\TestLogger;
 
 class GatewayTest extends GatewayTestCase
 {

@@ -4,7 +4,7 @@ namespace Omnipay\ChipInAsia\Webhook;
 
 use PHPUnit\Framework\TestCase;
 use Omnipay\ChipInAsia\Exception\WebhookException;
-use Psr\Log\Test\TestLogger;
+use Omnipay\ChipInAsia\TestLogger;
 
 class WebhookVerifierTest extends TestCase
 {

@@ -33,11 +33,13 @@
     },
     "require": {
         "php": "^7.4|^8.0|^8.1|^8.2|^8.3|^8.4",
-        "omnipay/common": "^3.0"
+        "omnipay/common": "^3.0",
+        "symfony/http-client": "^7.3"
     },
     "require-dev": {
-        "omnipay/tests": "^3.0",
-        "phpunit/phpunit": "^9.0|^10.0|^11.0"
+        "omnipay/tests": "^4.0",
+        "phpunit/phpunit": "^9.0|^10.0|^11.0",
+        "psr/log": "^3.0"
     },
     "scripts": {
         "test": "phpunit",
@@ -51,5 +53,10 @@
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        }
+    }
 }
