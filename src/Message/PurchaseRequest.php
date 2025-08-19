@@ -8,6 +8,14 @@ use Omnipay\ChipInAsia\Exception\ApiException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * CHIP Purchase Request
+ *
+ * This class handles the creation of purchase requests following the official
+ * CHIP PHP SDK structure with proper client details and purchase details models.
+ *
+ * @link https://developer.chip-in.asia/
+ */
 class PurchaseRequest extends AbstractRequest
 {
     protected $liveEndpoint = 'https://gate.chip-in.asia/api/v1/purchases/';
@@ -46,7 +54,7 @@ class PurchaseRequest extends AbstractRequest
 
     public function getSuccessUrl()
     {
-        return $this->getParameter('success_redirect');
+        return $this->getParameter('success_redirect') ?: $this->getReturnUrl();
     }
 
     public function setSuccessUrl($value)
@@ -56,7 +64,7 @@ class PurchaseRequest extends AbstractRequest
 
     public function getCancelUrl()
     {
-        return $this->getParameter('cancel_redirect');
+        return $this->getParameter('cancel_redirect') ?: $this->getCancelUrl();
     }
 
     public function setCancelUrl($value)
@@ -66,7 +74,7 @@ class PurchaseRequest extends AbstractRequest
 
     public function getFailureUrl()
     {
-        return $this->getParameter('failure_redirect');
+        return $this->getParameter('failure_redirect') ?: $this->getCancelUrl();
     }
 
     public function setFailureUrl($value)
@@ -76,7 +84,7 @@ class PurchaseRequest extends AbstractRequest
 
     public function getWebhookUrl()
     {
-        return $this->getParameter('webhook_url');
+        return $this->getParameter('webhook_url') ?: $this->getNotifyUrl();
     }
 
     public function setWebhookUrl($value)
@@ -86,7 +94,7 @@ class PurchaseRequest extends AbstractRequest
 
     public function getReference()
     {
-        return $this->getParameter('reference');
+        return $this->getParameter('reference') ?: $this->getTransactionId();
     }
 
     public function setReference($value)
@@ -114,6 +122,46 @@ class PurchaseRequest extends AbstractRequest
         return $this->setParameter('send_receipt', $value);
     }
 
+    public function getDue()
+    {
+        return $this->getParameter('due');
+    }
+
+    public function setDue($value)
+    {
+        return $this->setParameter('due', $value);
+    }
+
+    public function getTimezone()
+    {
+        return $this->getParameter('timezone') ?: 'Asia/Kuala_Lumpur';
+    }
+
+    public function setTimezone($value)
+    {
+        return $this->setParameter('timezone', $value);
+    }
+
+    public function getCreatorAgent()
+    {
+        return $this->getParameter('creator_agent') ?: 'Omnipay-ChipInAsia/1.0.1';
+    }
+
+    public function setCreatorAgent($value)
+    {
+        return $this->setParameter('creator_agent', $value);
+    }
+
+    public function getWebhookSecret()
+    {
+        return $this->getParameter('webhookSecret');
+    }
+
+    public function setWebhookSecret($value)
+    {
+        return $this->setParameter('webhookSecret', $value);
+    }
+
     public function getData()
     {
         try {
@@ -121,7 +169,7 @@ class PurchaseRequest extends AbstractRequest
             $this->logger->info('Creating purchase request', [
                 'amount' => $this->getAmount(),
                 'currency' => $this->getCurrency(),
-                'reference' => $this->getTransactionId()
+                'reference' => $this->getReference()
             ]);
         } catch (\Exception $e) {
             $this->logger->error('Purchase request validation failed', [
@@ -132,46 +180,134 @@ class PurchaseRequest extends AbstractRequest
             throw $e;
         }
     
-        // Create purchase object matching official SDK structure
+        // Create purchase object matching official CHIP SDK structure
         $data = [
             'brand_id' => $this->getBrandId(),
-            'success_redirect' => $this->getReturnUrl(),
-            'failure_redirect' => $this->getCancelUrl(),
-            'success_callback' => $this->getNotifyUrl(),
-            'creator_agent' => 'Omnipay-ChipInAsia/1.0.1',
-            'reference' => $this->getReference() ?: $this->getTransactionId(),
+            'success_redirect' => $this->getSuccessUrl(),
+            'failure_redirect' => $this->getFailureUrl(),
+            'cancel_redirect' => $this->getCancelUrl(),
+            'success_callback' => $this->getWebhookUrl(),
+            'creator_agent' => $this->getCreatorAgent(),
+            'reference' => $this->getReference(),
             'platform' => 'api',
             'send_receipt' => $this->getSendReceipt() ?? true,
             'due_strict' => $this->getDueStrictly() ?? false,
         ];
     
         // Add client details (matching official SDK ClientDetails model)
-        if ($this->getCard()) {
-            $data['client'] = array_filter([
-                'email' => $this->getCard()->getEmail(),
-                'phone' => $this->getCard()->getPhone(),
-                'full_name' => trim($this->getCard()->getFirstName() . ' ' . $this->getCard()->getLastName()),
-                'personal_code' => $this->getCard()->getNumber(),
-                'legal_name' => $this->getCard()->getCompany(),
-                'brand_name' => $this->getCard()->getCompany(),
-            ]);
+        $clientData = $this->buildClientDetails();
+        if (!empty($clientData)) {
+            $data['client'] = $clientData;
         }
     
         // Add purchase details (matching official SDK PurchaseDetails model)
-        $data['purchase'] = [
-            'timezone' => 'Asia/Kuala_Lumpur',
-            'currency' => $this->getCurrency(),
-            'due' => time() + (24 * 60 * 60), // Default 24 hours from now
-            'products' => [
-                [
-                    'name' => $this->getDescription() ?: 'Payment',
-                    'price' => (int) ($this->getAmount() * 100), // Convert to cents
-                    'quantity' => 1
-                ]
-            ]
-        ];
+        $data['purchase'] = $this->buildPurchaseDetails();
     
-        return array_filter($data);
+        return array_filter($data, function($value) {
+            return $value !== null && $value !== '';
+        });
+    }
+
+    /**
+     * Build client details following CHIP SDK ClientDetails model
+     */
+    protected function buildClientDetails()
+    {
+        $clientData = [];
+        
+        if ($this->getCard()) {
+            $card = $this->getCard();
+            
+            // Map card data to CHIP client structure
+            if ($card->getEmail()) {
+                $clientData['email'] = $card->getEmail();
+            }
+            
+            if ($card->getPhone()) {
+                $clientData['phone'] = $card->getPhone();
+            }
+            
+            $fullName = trim($card->getFirstName() . ' ' . $card->getLastName());
+            if ($fullName && $fullName !== ' ') {
+                $clientData['full_name'] = $fullName;
+            }
+            
+            if ($card->getNumber()) {
+                $clientData['personal_code'] = $card->getNumber();
+            }
+            
+            if ($card->getCompany()) {
+                $clientData['legal_name'] = $card->getCompany();
+                $clientData['brand_name'] = $card->getCompany();
+            }
+            
+            // Additional client fields from card data
+            if ($card->getBillingAddress1()) {
+                $clientData['street_address'] = $card->getBillingAddress1();
+            }
+            
+            if ($card->getBillingCity()) {
+                $clientData['city'] = $card->getBillingCity();
+            }
+            
+            if ($card->getBillingState()) {
+                $clientData['state'] = $card->getBillingState();
+            }
+            
+            if ($card->getBillingPostcode()) {
+                $clientData['zip_code'] = $card->getBillingPostcode();
+            }
+            
+            if ($card->getBillingCountry()) {
+                $clientData['country'] = $card->getBillingCountry();
+            }
+        }
+        
+        return array_filter($clientData);
+    }
+
+    /**
+     * Build purchase details following CHIP SDK PurchaseDetails model
+     */
+    protected function buildPurchaseDetails()
+    {
+        $purchaseData = [
+            'timezone' => $this->getTimezone(),
+            'currency' => $this->getCurrency(),
+            'due' => $this->getDue() ?: (time() + (24 * 60 * 60)), // Default 24 hours from now
+            'products' => $this->buildProducts()
+        ];
+        
+        return $purchaseData;
+    }
+
+    /**
+     * Build products array for purchase
+     */
+    protected function buildProducts()
+    {
+        $products = [];
+        
+        // Check if products are provided as parameter
+        $providedProducts = $this->getParameter('products');
+        if (is_array($providedProducts) && !empty($providedProducts)) {
+            foreach ($providedProducts as $product) {
+                $products[] = [
+                    'name' => $product['name'] ?? 'Product',
+                    'price' => isset($product['price']) ? (int)($product['price'] * 100) : 0,
+                    'quantity' => $product['quantity'] ?? 1
+                ];
+            }
+        } else {
+            // Default single product from amount and description
+            $products[] = [
+                'name' => $this->getDescription() ?: 'Payment',
+                'price' => (int)($this->getAmount() * 100), // Convert to cents
+                'quantity' => 1
+            ];
+        }
+        
+        return $products;
     }
 
     /**
@@ -198,8 +334,8 @@ class PurchaseRequest extends AbstractRequest
         
         if (empty($this->getCurrency())) {
             $errors['currency'] = 'Currency is required';
-        } elseif (!in_array(strtoupper($this->getCurrency()), ['MYR', 'SGD', 'USD', 'EUR'])) {
-            $errors['currency'] = 'Currency must be one of: MYR, SGD, USD, EUR';
+        } elseif (!in_array(strtoupper($this->getCurrency()), ['MYR', 'SGD', 'USD', 'EUR', 'THB', 'VND', 'IDR'])) {
+            $errors['currency'] = 'Currency must be one of: MYR, SGD, USD, EUR, THB, VND, IDR';
         }
         
         // Validate email if provided
@@ -214,12 +350,35 @@ class PurchaseRequest extends AbstractRequest
             'successUrl' => $this->getSuccessUrl(),
             'cancelUrl' => $this->getCancelUrl(),
             'failureUrl' => $this->getFailureUrl(),
-            'webhookUrl' => $this->getWebhookUrl()
+            'webhookUrl' => $this->getWebhookUrl(),
+            'returnUrl' => $this->getReturnUrl(),
+            'notifyUrl' => $this->getNotifyUrl()
         ];
         
         foreach ($urls as $field => $url) {
             if ($url && !filter_var($url, FILTER_VALIDATE_URL)) {
                 $errors[$field] = "Invalid {$field} format";
+            }
+        }
+        
+        // Validate due date if provided
+        if ($this->getDue() && !is_numeric($this->getDue())) {
+            $errors['due'] = 'Due date must be a valid timestamp';
+        }
+        
+        // Validate products if provided
+        $products = $this->getParameter('products');
+        if ($products && is_array($products)) {
+            foreach ($products as $index => $product) {
+                if (!isset($product['name']) || empty($product['name'])) {
+                    $errors["products.{$index}.name"] = 'Product name is required';
+                }
+                if (!isset($product['price']) || !is_numeric($product['price']) || $product['price'] <= 0) {
+                    $errors["products.{$index}.price"] = 'Product price must be a positive number';
+                }
+                if (isset($product['quantity']) && (!is_numeric($product['quantity']) || $product['quantity'] <= 0)) {
+                    $errors["products.{$index}.quantity"] = 'Product quantity must be a positive number';
+                }
             }
         }
         
@@ -234,7 +393,7 @@ class PurchaseRequest extends AbstractRequest
             'Authorization' => 'Bearer ' . $this->getApiKey(),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            'User-Agent' => 'Omnipay-ChipInAsia/1.0'
+            'User-Agent' => $this->getCreatorAgent()
         ];
 
         try {

@@ -1,6 +1,6 @@
 <?php
 
-namespace Omnipay\ChipInAsia;
+namespace Omnipay\ChipInAsia\Tests;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;

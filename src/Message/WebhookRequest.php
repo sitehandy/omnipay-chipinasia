@@ -9,7 +9,12 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
 /**
- * Webhook request handler for Chip-in Asia
+ * CHIP Webhook Request Handler
+ * 
+ * Handles incoming webhook notifications from CHIP payment gateway.
+ * Supports both webhook secret (HMAC) and public key (RSA) verification methods.
+ * 
+ * @package Omnipay\ChipInAsia\Message
  */
 class WebhookRequest extends AbstractRequest
 {
@@ -30,7 +35,7 @@ class WebhookRequest extends AbstractRequest
     }
 
     /**
-     * Get webhook secret
+     * Get webhook secret for HMAC verification
      */
     public function getWebhookSecret()
     {
@@ -38,11 +43,27 @@ class WebhookRequest extends AbstractRequest
     }
 
     /**
-     * Set webhook secret
+     * Set webhook secret for HMAC verification
      */
     public function setWebhookSecret($value)
     {
         return $this->setParameter('webhookSecret', $value);
+    }
+
+    /**
+     * Get webhook public key for RSA verification
+     */
+    public function getWebhookPublicKey()
+    {
+        return $this->getParameter('webhookPublicKey');
+    }
+
+    /**
+     * Set webhook public key for RSA verification
+     */
+    public function setWebhookPublicKey($value)
+    {
+        return $this->setParameter('webhookPublicKey', $value);
     }
 
     /**
@@ -52,10 +73,13 @@ class WebhookRequest extends AbstractRequest
     {
         if ($this->verifier === null) {
             $secret = $this->getWebhookSecret();
-            if (empty($secret)) {
-                throw new WebhookException('Webhook secret is required for verification');
+            $publicKey = $this->getWebhookPublicKey();
+            
+            if (empty($secret) && empty($publicKey)) {
+                throw new WebhookException('Either webhook secret or public key is required for verification');
             }
-            $this->verifier = new WebhookVerifier($secret, $this->logger);
+            
+            $this->verifier = new WebhookVerifier($secret, $this->logger, $publicKey);
         }
         return $this->verifier;
     }
@@ -105,19 +129,25 @@ class WebhookRequest extends AbstractRequest
      */
     protected function getSignatureFromHeaders(): string
     {
-        // Try different header formats that Chip-in Asia might use
+        // Try CHIP-specific header formats
         $headers = [
             'X-Chip-Signature',
-            'X-Signature',
+            'X-Signature', 
             'Chip-Signature',
-            'Signature'
+            'Signature',
+            'X-CHIP-Signature' // Alternative casing
         ];
 
         foreach ($headers as $header) {
             $signature = $this->httpRequest->headers->get($header);
             if (!empty($signature)) {
-                // Remove any prefix like 'sha256='
-                return preg_replace('/^[a-z0-9]+=/', '', $signature);
+                // Handle different signature formats
+                if (strpos($signature, 'sha256=') === 0) {
+                    return substr($signature, 7); // Remove 'sha256=' prefix
+                } elseif (strpos($signature, 'rsa-sha256=') === 0) {
+                    return substr($signature, 11); // Remove 'rsa-sha256=' prefix
+                }
+                return $signature; // Return as-is if no known prefix
             }
         }
 
@@ -132,14 +162,23 @@ class WebhookRequest extends AbstractRequest
         $headers = [
             'X-Chip-Timestamp',
             'X-Timestamp',
-            'Chip-Timestamp',
-            'Timestamp'
+            'Chip-Timestamp', 
+            'Timestamp',
+            'X-CHIP-Timestamp' // Alternative casing
         ];
 
         foreach ($headers as $header) {
             $timestamp = $this->httpRequest->headers->get($header);
             if (!empty($timestamp)) {
-                return $timestamp;
+                // Validate timestamp format
+                if (is_numeric($timestamp)) {
+                    return $timestamp;
+                }
+                // Try to parse ISO 8601 format and convert to Unix timestamp
+                $dateTime = \DateTime::createFromFormat(\DateTime::ISO8601, $timestamp);
+                if ($dateTime !== false) {
+                    return (string) $dateTime->getTimestamp();
+                }
             }
         }
 

@@ -2,17 +2,25 @@
     "name": "sitehandy/omnipay-chipinasia",
     "version": "1.0.1",
     "type": "library",
-    "description": "Chip-in Asia payment gateway for Omnipay payment processing library",
+    "description": "CHIP payment gateway for Omnipay - supports purchase creation, webhook verification, and transaction completion with RSA/HMAC signature validation",
     "keywords": [
         "gateway",
         "merchant",
         "omnipay",
         "pay",
         "payment",
+        "chip",
         "chipinasia",
         "chip-in-asia",
         "purchase",
-        "malaysia"
+        "webhook",
+        "rsa",
+        "hmac",
+        "signature",
+        "verification",
+        "malaysia",
+        "singapore",
+        "thailand"
     ],
     "homepage": "https://github.com/sitehandy/omnipay-chipinasia",
     "license": "MIT",
@@ -29,13 +37,14 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Omnipay\\ChipInAsia\\": "tests/"
+            "Omnipay\\ChipInAsia\\Tests\\": "tests/"
         }
     },
     "require": {
         "php": "^8.0|^8.1|^8.2|^8.3|^8.4",
         "omnipay/common": "^3.0",
-        "symfony/http-client": "^7.3",
+        "symfony/http-client": "^6.0|^7.0",
+        "psr/log": "^1.0|^2.0|^3.0",
         "ext-curl": "*",
         "ext-json": "*",
         "ext-openssl": "*"
@@ -43,7 +52,9 @@
     "require-dev": {
         "omnipay/tests": "^4.0",
         "phpunit/phpunit": "^9.0|^10.0|^11.0",
-        "psr/log": "^3.0"
+        "symfony/http-foundation": "^6.0|^7.0",
+        "mockery/mockery": "^1.4",
+        "php-cs-fixer/shim": "^3.0"
     },
     "scripts": {
         "test": "phpunit",

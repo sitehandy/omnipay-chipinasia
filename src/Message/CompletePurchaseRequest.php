@@ -8,10 +8,17 @@ use Omnipay\ChipInAsia\Exception\ApiException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * CHIP Complete Purchase Request
+ *
+ * Handles transaction completion by retrieving purchase details from CHIP API.
+ * This is typically called after a successful payment redirect to verify the transaction status.
+ *
+ * @see https://github.com/CHIPAsia/chip-php-sdk
+ */
 class CompletePurchaseRequest extends AbstractRequest
 {
-    protected $liveEndpoint = 'https://gate.chip-in.asia/api/v1/purchases/';
-    protected $testEndpoint = 'https://gate.chip-in.asia/api/v1/purchases/';
+    protected $endpoint = 'https://gate.chip-in.asia/api/v1/purchases/';
     
     /**
      * @var LoggerInterface
@@ -34,22 +41,33 @@ class CompletePurchaseRequest extends AbstractRequest
         return $this->setParameter('apiKey', $value);
     }
 
+    public function getBrandId()
+    {
+        return $this->getParameter('brandId');
+    }
+
+    public function setBrandId($value)
+    {
+        return $this->setParameter('brandId', $value);
+    }
+
+    public function getWebhookSecret()
+    {
+        return $this->getParameter('webhookSecret');
+    }
+
+    public function setWebhookSecret($value)
+    {
+        return $this->setParameter('webhookSecret', $value);
+    }
+
     public function getData()
     {
         try {
             $this->validateRequest();
             
-            // Get purchase ID from query parameters or POST data
-            $purchaseId = $this->httpRequest->query->get('purchase_id') 
-                       ?: $this->httpRequest->request->get('purchase_id')
-                       ?: $this->getTransactionReference();
-
-            if (!$purchaseId) {
-                throw new InvalidRequestException('Missing purchase_id parameter');
-            }
-            
-            // Sanitize purchase ID
-            $purchaseId = $this->sanitizePurchaseId($purchaseId);
+            // Get purchase ID from multiple sources following CHIP SDK patterns
+            $purchaseId = $this->getPurchaseId();
             
             $this->logger->info('Creating complete purchase request', [
                 'purchase_id' => $purchaseId
@@ -65,6 +83,42 @@ class CompletePurchaseRequest extends AbstractRequest
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * Get purchase ID from various sources
+     */
+    protected function getPurchaseId(): string
+    {
+        // Priority order: explicit parameter > query params > POST data > transaction reference
+        $purchaseId = $this->getParameter('purchase_id')
+                   ?: $this->httpRequest->query->get('purchase_id')
+                   ?: $this->httpRequest->request->get('purchase_id')
+                   ?: $this->httpRequest->query->get('id')
+                   ?: $this->httpRequest->request->get('id')
+                   ?: $this->getTransactionReference();
+
+        if (!$purchaseId) {
+            throw new InvalidRequestException('Missing purchase_id parameter. Provide via setPurchaseId(), query parameter, or POST data.');
+        }
+        
+        return $this->sanitizePurchaseId($purchaseId);
+    }
+
+    /**
+     * Set purchase ID parameter
+     */
+    public function setPurchaseId($value)
+    {
+        return $this->setParameter('purchase_id', $value);
+    }
+
+    /**
+     * Get purchase ID parameter
+     */
+    public function getPurchaseIdParameter()
+    {
+        return $this->getParameter('purchase_id');
     }
 
     /**
@@ -90,11 +144,16 @@ class CompletePurchaseRequest extends AbstractRequest
      */
     protected function sanitizePurchaseId(string $purchaseId): string
     {
-        // Remove any non-alphanumeric characters except hyphens and underscores
-        $sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', $purchaseId);
+        // CHIP purchase IDs are typically UUIDs or alphanumeric strings
+        $sanitized = preg_replace('/[^a-zA-Z0-9_-]/', '', trim($purchaseId));
         
         if (empty($sanitized)) {
-            throw new InvalidRequestException('Invalid purchase ID format');
+            throw new InvalidRequestException('Invalid purchase ID format. Must contain only alphanumeric characters, hyphens, and underscores.');
+        }
+        
+        // Validate length (CHIP IDs are typically 20-40 characters)
+        if (strlen($sanitized) < 10 || strlen($sanitized) > 50) {
+            throw new InvalidRequestException('Invalid purchase ID length. Must be between 10 and 50 characters.');
         }
         
         return $sanitized;
@@ -106,13 +165,13 @@ class CompletePurchaseRequest extends AbstractRequest
             'Authorization' => 'Bearer ' . $this->getApiKey(),
             'Content-Type' => 'application/json',
             'Accept' => 'application/json',
-            'User-Agent' => 'Omnipay-ChipInAsia/1.0'
+            'User-Agent' => $this->getUserAgent()
         ];
 
         $url = $this->getEndpoint() . $data['purchase_id'] . '/';
 
         try {
-            $this->logger->info('Sending complete purchase request to Chip-in Asia', [
+            $this->logger->info('Sending complete purchase request to CHIP', [
                 'url' => $url,
                 'purchase_id' => $data['purchase_id']
             ]);
@@ -126,7 +185,7 @@ class CompletePurchaseRequest extends AbstractRequest
             $statusCode = $httpResponse->getStatusCode();
             $responseBody = $httpResponse->getBody()->getContents();
             
-            $this->logger->info('Received complete purchase response from Chip-in Asia', [
+            $this->logger->info('Received complete purchase response from CHIP', [
                 'status_code' => $statusCode,
                 'response_length' => strlen($responseBody)
             ]);
@@ -154,11 +213,27 @@ class CompletePurchaseRequest extends AbstractRequest
             ]);
             
             throw new ApiException(
-                'Failed to communicate with Chip-in Asia API: ' . $e->getMessage(),
+                'Failed to communicate with CHIP API: ' . $e->getMessage(),
                 0,
                 $e
             );
         }
+    }
+
+    /**
+     * Get User-Agent string
+     */
+    protected function getUserAgent(): string
+    {
+        return $this->getParameter('creator_agent') ?: 'Omnipay-ChipInAsia/2.0';
+    }
+
+    /**
+     * Set User-Agent string
+     */
+    public function setCreatorAgent($value)
+    {
+        return $this->setParameter('creator_agent', $value);
     }
 
     public function createResponse($data)
@@ -166,8 +241,11 @@ class CompletePurchaseRequest extends AbstractRequest
         return new CompletePurchaseResponse($this, $data);
     }
 
-    protected function getEndpoint()
+    /**
+     * Get the endpoint URL for the request
+     */
+    public function getEndpoint(): string
     {
-        return $this->getTestMode() ? $this->testEndpoint : $this->liveEndpoint;
+        return $this->endpoint;
     }
 }

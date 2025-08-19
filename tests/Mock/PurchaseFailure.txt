@@ -2,6 +2,16 @@ HTTP/1.1 400 Bad Request
 Content-Type: application/json
 
 {
-    "detail": "Invalid API key provided",
-    "status": "error"
+    "errors": [
+        {
+            "detail": "Invalid API key provided",
+            "code": "invalid_api_key",
+            "source": {
+                "pointer": "/api_key"
+            }
+        }
+    ],
+    "status": "error",
+    "error": "Authentication failed",
+    "message": "The provided API key is invalid or has been revoked"
 }

@@ -1,0 +1,65 @@
+{
+    "id": "purchase_12345678901234567890",
+    "status": "paid",
+    "total_override": 1500,
+    "currency": "MYR",
+    "transaction_id": "txn_987654321",
+    "gateway_reference": "gw_ref_123456",
+    "payment_method": "fpx",
+    "completed_at": "2022-01-01T12:00:00Z",
+    "created_at": "2022-01-01T10:00:00Z",
+    "updated_at": "2022-01-01T12:00:00Z",
+    "purchase": {
+        "total": 1500,
+        "currency": "MYR",
+        "products": [
+            {
+                "name": "Test Product 1",
+                "price": 1000,
+                "quantity": 1
+            },
+            {
+                "name": "Test Product 2",
+                "price": 500,
+                "quantity": 1
+            }
+        ],
+        "timezone": "Asia/Kuala_Lumpur",
+        "due_date": "2022-01-02T10:00:00Z",
+        "brand_id": "brand_123",
+        "client_id": "client_456",
+        "success_callback": "https://example.com/success",
+        "success_redirect": "https://example.com/success",
+        "failure_redirect": "https://example.com/failure",
+        "cancel_redirect": "https://example.com/cancel",
+        "creator_agent": "Omnipay ChipInAsia v1.0.0",
+        "reference": "order_789",
+        "send_receipt": true
+    },
+    "client": {
+        "email": "customer@example.com",
+        "phone": "+60123456789",
+        "full_name": "John Doe",
+        "personal_code": "123456789",
+        "brand_id": "brand_123",
+        "legal_name": "John Doe Sdn Bhd",
+        "brand_name": "Test Brand",
+        "registration_number": "REG123456",
+        "street_address": "123 Test Street",
+        "country": "MY",
+        "city": "Kuala Lumpur",
+        "zip_code": "50000",
+        "shipping_street_address": "123 Test Street",
+        "shipping_country": "MY",
+        "shipping_city": "Kuala Lumpur",
+        "shipping_zip_code": "50000",
+        "cc": ["admin@example.com"]
+    },
+    "payment": {
+        "method": "fpx",
+        "transaction_id": "txn_987654321",
+        "completed_at": "2022-01-01T12:00:00Z",
+        "bank": "Maybank",
+        "bank_account": "****1234"
+    }
+}

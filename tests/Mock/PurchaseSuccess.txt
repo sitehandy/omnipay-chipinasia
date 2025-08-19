@@ -2,11 +2,15 @@ HTTP/1.1 201 Created
 Content-Type: application/json
 
 {
-    "id": "purchase_test_12345",
+    "id": "purchase_test_12345678901234567890",
     "reference": "TEST123",
-    "payment_url": "https://gate.chip-in.asia/payment/purchase_test_12345",
-    "redirect_url": "https://gate.chip-in.asia/payment/purchase_test_12345",
+    "payment_url": "https://gate.chip-in.asia/payment/purchase_test_12345678901234567890",
+    "redirect_url": "https://gate.chip-in.asia/payment/purchase_test_12345678901234567890",
     "status": "pending",
+    "created_at": "2022-01-01T10:00:00Z",
+    "updated_at": "2022-01-01T10:00:00Z",
+    "currency": "MYR",
+    "total_override": 1000,
     "purchase": {
         "currency": "MYR",
         "total": 1000,
@@ -16,6 +20,23 @@ Content-Type: application/json
                 "price": 1000,
                 "quantity": 1
             }
-        ]
+        ],
+        "timezone": "Asia/Kuala_Lumpur",
+        "due_date": "2022-01-02T10:00:00Z",
+        "brand_id": "brand_test_123",
+        "client_id": "client_test_456",
+        "success_callback": "https://example.com/webhook",
+        "success_redirect": "https://example.com/success",
+        "failure_redirect": "https://example.com/failure",
+        "cancel_redirect": "https://example.com/cancel",
+        "creator_agent": "Omnipay ChipInAsia v1.0.0",
+        "reference": "TEST123",
+        "send_receipt": true
+    },
+    "client": {
+        "email": "test@example.com",
+        "phone": "+60123456789",
+        "full_name": "Test Customer",
+        "brand_id": "brand_test_123"
     }
 }

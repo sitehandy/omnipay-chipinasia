@@ -132,6 +132,41 @@ class CompletePurchaseRequestTest extends TestCase
         $request->getData();
     }
     
+    public function testPurchaseIdLengthValidation()
+    {
+        // Test purchase ID that's too short
+        $httpRequest = new HttpRequest(['purchase_id' => 'abc']);
+        $request = new CompletePurchaseRequest(
+            $this->getHttpClient(),
+            $httpRequest,
+            $this->logger
+        );
+        $request->setApiKey('test_api_key');
+        
+        $this->expectException(InvalidRequestException::class);
+        $this->expectExceptionMessage('Invalid purchase ID format');
+        
+        $request->getData();
+    }
+    
+    public function testPurchaseIdTooLong()
+    {
+        // Test purchase ID that's too long (over 50 characters)
+        $longId = str_repeat('a', 51);
+        $httpRequest = new HttpRequest(['purchase_id' => $longId]);
+        $request = new CompletePurchaseRequest(
+            $this->getHttpClient(),
+            $httpRequest,
+            $this->logger
+        );
+        $request->setApiKey('test_api_key');
+        
+        $this->expectException(InvalidRequestException::class);
+        $this->expectExceptionMessage('Invalid purchase ID format');
+        
+        $request->getData();
+    }
+    
     public function testValidPurchaseIdFormats()
     {
         $validIds = [
@@ -178,9 +213,33 @@ class CompletePurchaseRequestTest extends TestCase
     
     public function testGetEndpoint()
     {
-        $this->request->setTestMode(false);
         $endpoint = $this->request->getEndpoint();
         
         $this->assertEquals('https://gate.chip-in.asia/api/v1/purchases/', $endpoint);
+    }
+    
+    public function testUserAgentHeader()
+    {
+        $this->request->setCreatorAgent('TestApp/1.0');
+        
+        // Test that User-Agent is set correctly in headers
+        $headers = $this->request->getHeaders();
+        
+        $this->assertArrayHasKey('User-Agent', $headers);
+        $this->assertEquals('TestApp/1.0', $headers['User-Agent']);
+    }
+    
+    public function testPurchaseIdFromExplicitParameter()
+    {
+        $this->request->setPurchaseId('explicit_purchase_123');
+        
+        $data = $this->request->getData();
+        
+        $this->assertEquals('explicit_purchase_123', $data['purchase_id']);
+    }
+    
+    public function testGetPurchaseIdParameter()
+    {
+        $this->assertEquals('purchase_id', $this->request->getPurchaseIdParameter());
     }
 }

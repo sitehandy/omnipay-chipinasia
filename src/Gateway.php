@@ -10,6 +10,43 @@ use Omnipay\ChipInAsia\Exception\InvalidRequestException;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 
+/**
+ * CHIP Gateway
+ *
+ * This gateway provides integration with CHIP payment platform following
+ * the official CHIP PHP SDK patterns and Omnipay standards.
+ *
+ * Example:
+ * <code>
+ *   // Create a gateway for the CHIP Gateway
+ *   $gateway = Omnipay::create('ChipInAsia');
+ *
+ *   // Initialize the gateway
+ *   $gateway->setApiKey('your-api-key');
+ *   $gateway->setBrandId('your-brand-id');
+ *   $gateway->setTestMode(true);
+ *   $gateway->setWebhookSecret('your-webhook-secret');
+ *
+ *   // Create a purchase request
+ *   $response = $gateway->purchase([
+ *       'amount' => '10.00',
+ *       'currency' => 'MYR',
+ *       'transactionId' => 'ORDER123',
+ *       'description' => 'Test Purchase',
+ *       'returnUrl' => 'https://example.com/success',
+ *       'cancelUrl' => 'https://example.com/cancel',
+ *       'notifyUrl' => 'https://example.com/webhook',
+ *       'card' => [
+ *           'email' => 'customer@example.com',
+ *           'firstName' => 'John',
+ *           'lastName' => 'Doe',
+ *           'phone' => '+60123456789'
+ *       ]
+ *   ])->send();
+ * </code>
+ *
+ * @link https://developer.chip-in.asia/
+ */
 class Gateway extends AbstractGateway
 {
     /**
@@ -25,7 +62,12 @@ class Gateway extends AbstractGateway
     
     public function getName()
     {
-        return 'Chip-in Asia';
+        return 'CHIP';
+    }
+
+    public function getShortName()
+    {
+        return 'ChipInAsia';
     }
 
     public function getDefaultParameters()
@@ -36,6 +78,7 @@ class Gateway extends AbstractGateway
             'testMode' => false,
             'webhookSecret' => '',
             'endpoint' => null, // Allow custom endpoint override
+            'webhookPublicKey' => '', // For webhook signature verification
         ];
     }
 
@@ -79,6 +122,16 @@ class Gateway extends AbstractGateway
         return $this->setParameter('webhookSecret', $value);
     }
 
+    public function getWebhookPublicKey()
+    {
+        return $this->getParameter('webhookPublicKey');
+    }
+
+    public function setWebhookPublicKey($value)
+    {
+        return $this->setParameter('webhookPublicKey', $value);
+    }
+
     public function getEndpoint()
     {
         return $this->getParameter('endpoint');
@@ -97,15 +150,7 @@ class Gateway extends AbstractGateway
                 'parameters' => array_keys($parameters)
             ]);
             
-            $request = $this->createRequest(PurchaseRequest::class, $parameters);
-            
-            // Pass logger to request if it supports it
-            if (method_exists($request, '__construct')) {
-                $request = new PurchaseRequest($this->httpClient, $this->httpRequest, $this->logger);
-                $request->initialize($parameters);
-            }
-            
-            return $request;
+            return $this->createRequest(PurchaseRequest::class, $parameters);
             
         } catch (\Exception $e) {
             $this->logger->error('Failed to create purchase request', [
@@ -123,10 +168,7 @@ class Gateway extends AbstractGateway
                 'parameters' => array_keys($parameters)
             ]);
             
-            $request = new CompletePurchaseRequest($this->httpClient, $this->httpRequest, $this->logger);
-            $request->initialize($parameters);
-            
-            return $request;
+            return $this->createRequest(CompletePurchaseRequest::class, $parameters);
             
         } catch (\Exception $e) {
             $this->logger->error('Failed to create complete purchase request', [
@@ -144,10 +186,7 @@ class Gateway extends AbstractGateway
                 'parameters' => array_keys($parameters)
             ]);
             
-            $request = new WebhookRequest($this->httpClient, $this->httpRequest, $this->logger);
-            $request->initialize($parameters);
-            
-            return $request;
+            return $this->createRequest(WebhookRequest::class, $parameters);
             
         } catch (\Exception $e) {
             $this->logger->error('Failed to create webhook request', [
@@ -182,8 +221,8 @@ class Gateway extends AbstractGateway
      */
     protected function validateWebhookConfiguration(): void
     {
-        if (empty($this->getWebhookSecret())) {
-            throw new InvalidRequestException('Webhook secret is required for webhook processing');
+        if (empty($this->getWebhookSecret()) && empty($this->getWebhookPublicKey())) {
+            throw new InvalidRequestException('Webhook secret or webhook public key is required for webhook processing');
         }
     }
     
@@ -197,9 +236,48 @@ class Gateway extends AbstractGateway
             return rtrim($this->getEndpoint(), '/') . '/api/v1/';
         }
         
-        // Use standard endpoints based on test mode
-        return $this->getTestMode() 
-            ? 'https://gate.chip-in.asia/api/v1/'
-            : 'https://gate.chip-in.asia/api/v1/';
+        // Use standard endpoints - both test and production use the same endpoint
+        // as per CHIP SDK documentation
+        return 'https://gate.chip-in.asia/api/v1/';
+    }
+
+    /**
+     * Get the base URL for the CHIP platform
+     */
+    public function getBaseUrl()
+    {
+        return 'https://gate.chip-in.asia';
+    }
+
+    /**
+     * Check if gateway supports purchase
+     */
+    public function supportsPurchase()
+    {
+        return true;
+    }
+
+    /**
+     * Check if gateway supports complete purchase
+     */
+    public function supportsCompletePurchase()
+    {
+        return true;
+    }
+
+    /**
+     * Check if gateway supports webhooks
+     */
+    public function supportsAcceptNotification()
+    {
+        return true;
+    }
+
+    /**
+     * Get logger instance
+     */
+    public function getLogger()
+    {
+        return $this->logger;
     }
 }

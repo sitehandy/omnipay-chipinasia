@@ -1,19 +1,29 @@
-# Omnipay: Chip-in Asia
+# Omnipay: CHIP
 
-**Chip-in Asia payment gateway for Omnipay payment processing library**
+**CHIP payment gateway for Omnipay payment processing library with advanced webhook verification**
 
 [![Latest Stable Version](https://img.shields.io/packagist/v/sitehandy/omnipay-chipinasia.svg?style=flat-square)](https://packagist.org/packages/sitehandy/omnipay-chipinasia)
 [![Total Downloads](https://img.shields.io/packagist/dt/sitehandy/omnipay-chipinasia.svg?style=flat-square)](https://packagist.org/packages/sitehandy/omnipay-chipinasia)
 [![License](https://img.shields.io/packagist/l/sitehandy/omnipay-chipinasia.svg?style=flat-square)](https://packagist.org/packages/sitehandy/omnipay-chipinasia)
 
-[Omnipay](https://github.com/thephpleague/omnipay) is a framework agnostic, multi-gateway payment processing library for PHP. This package implements Chip-in Asia payment gateway support for Omnipay.
+[Omnipay](https://github.com/thephpleague/omnipay) is a framework agnostic, multi-gateway payment processing library for PHP. This package implements CHIP payment gateway support for Omnipay with comprehensive webhook verification including both HMAC and RSA signature validation.
+
+## Features
+
+- ✅ **Dual Signature Verification**: Support for both HMAC (webhook secret) and RSA (public key) signature verification
+- ✅ **Multi-Currency Support**: MYR, SGD, USD, THB, VND, IDR
+- ✅ **Advanced Purchase Options**: Due dates, timezones, creator agents, and custom metadata
+- ✅ **Comprehensive Error Handling**: Detailed error messages and proper exception handling
+- ✅ **Modern PHP Support**: PHP 8.0-8.4 with strict typing and modern practices
+- ✅ **Extensive Testing**: 56 tests with 111 assertions covering all functionality
+- ✅ **Laravel Integration**: Ready-to-use examples for Laravel applications
 
 ## Requirements
 
-- PHP 7.4 or higher
-- PHP 8.0, 8.1, 8.2, 8.3, 8.4 supported
+- PHP 8.0 or higher (8.0, 8.1, 8.2, 8.3, 8.4 supported)
 - cURL extension
 - JSON extension
+- OpenSSL extension (for RSA signature verification)
 - Omnipay 3.x
 
 ## Installation
@@ -27,9 +37,9 @@ composer require league/omnipay sitehandy/omnipay-chipinasia
 **Note:** Composer will automatically select the latest stable version. If you need a specific version, you can specify it, but using version constraints like ^1.0 may cause warnings.
 
 ### Version Information
-- **v1.0.0**: First stable release with PHP 7.4-8.4 support, modern HTTP client, and comprehensive testing
-- **Requirements**: PHP 7.4+ with cURL and JSON extensions
-- **Compatibility**: Omnipay 3.x framework
+- **v2.0.0**: Enhanced release with dual signature verification (HMAC + RSA), expanded currency support, and modern PHP 8.0+ features
+- **Requirements**: PHP 8.0+ with cURL, JSON, and OpenSSL extensions
+- **Compatibility**: Omnipay 3.x framework with comprehensive webhook verification
 
 ## Table of Contents
 
@@ -50,13 +60,15 @@ composer require league/omnipay sitehandy/omnipay-chipinasia
 
 For general usage instructions, please see the main [Omnipay repository](https://github.com/thephpleague/omnipay).
 
-### Chip-in Asia Account Setup
+### CHIP Account Setup
 
 To begin, you need to:
-1. Open an account at [Chip-in Asia](https://visit.my/chipinasia)
+1. Open an account at [CHIP](https://www.chip-in.asia)
 2. Obtain your API credentials (API Key and Brand ID)
-3. Configure your webhook endpoints
-4. Set up your return URLs
+3. Configure your webhook endpoints with either:
+   - **Webhook Secret** for HMAC-SHA256 verification (recommended for most use cases)
+   - **Public Key** for RSA-SHA256 verification (enhanced security)
+4. Set up your return URLs for different payment outcomes
 
 ## Quick Start
 
@@ -69,7 +81,12 @@ $gateway->setApiKey('your_api_key_here');
 $gateway->setBrandId('your_brand_id_here');
 $gateway->setTestMode(true); // Use false for production
 
-// Create a simple payment
+// Configure webhook verification (choose one method)
+$gateway->setWebhookSecret('your_webhook_secret'); // For HMAC verification
+// OR
+// $gateway->setWebhookPublicKey($publicKey); // For RSA verification
+
+// Create a payment with enhanced options
 $response = $gateway->purchase([
     'amount' => '50.00',
     'currency' => 'MYR',
@@ -79,15 +96,35 @@ $response = $gateway->purchase([
     'cancelUrl' => 'https://yoursite.com/payment/cancel',
     'failureUrl' => 'https://yoursite.com/payment/failure',
     'webhookUrl' => 'https://yoursite.com/payment/webhook',
-    'card' => [
+    
+    // Customer details
+    'clientDetails' => [
         'email' => 'customer@example.com',
-        'firstName' => 'John',
-        'lastName' => 'Doe',
         'phone' => '+60123456789',
-    ]
+        'fullName' => 'John Doe',
+    ],
+    
+    // Product information
+    'purchaseDetails' => [
+        'products' => [
+            [
+                'name' => 'Premium Product',
+                'price' => 5000, // Amount in cents
+                'quantity' => 1,
+                'description' => 'High-quality premium product'
+            ]
+        ]
+    ],
+    
+    // Advanced options
+    'dueDate' => date('Y-m-d H:i:s', strtotime('+1 hour')),
+    'timezone' => 'Asia/Kuala_Lumpur',
+    'creatorAgent' => 'MyApp/1.0'
 ])->send();
 
 if ($response->isRedirect()) {
+    // Store transaction reference for later verification
+    $_SESSION['purchase_id'] = $response->getTransactionReference();
     $response->redirect();
 } else {
     echo 'Error: ' . $response->getMessage();
@@ -166,6 +203,27 @@ $response = $gateway->purchase([
 $response = $gateway->purchase([
     'amount' => '12.00',
     'currency' => 'USD',
+    // ... other parameters
+]);
+
+// Thai Baht
+$response = $gateway->purchase([
+    'amount' => '400.00',
+    'currency' => 'THB',
+    // ... other parameters
+]);
+
+// Vietnamese Dong
+$response = $gateway->purchase([
+    'amount' => '280000.00',
+    'currency' => 'VND',
+    // ... other parameters
+]);
+
+// Indonesian Rupiah
+$response = $gateway->purchase([
+    'amount' => '180000.00',
+    'currency' => 'IDR',
     // ... other parameters
 ]);
 ```
@@ -421,66 +479,155 @@ $gateway->setLogger(new \Monolog\Logger('chip-in-asia'));
 
 ### Configuration Options
 
+#### Gateway Configuration
 | Parameter | Description | Required | Type |
 |-----------|-------------|----------|------|
-| `apiKey` | Your Chip-in Asia API key | Yes | string |
-| `brandId` | Your Chip-in Asia Brand ID | Yes | string |
+| `apiKey` | Your CHIP API key | Yes | string |
+| `brandId` | Your CHIP Brand ID | Yes | string |
 | `testMode` | Set to true for testing environment | No | boolean |
+| `webhookSecret` | Webhook secret for HMAC verification | No* | string |
+| `webhookPublicKey` | Public key for RSA verification | No* | string |
+| `creatorAgent` | User agent identifier for API calls | No | string |
+
+*Either `webhookSecret` or `webhookPublicKey` is required for webhook verification.
+
+#### Purchase Parameters
+| Parameter | Description | Required | Type |
+|-----------|-------------|----------|------|
 | `amount` | Payment amount | Yes | string/float |
-| `currency` | Payment currency (MYR, SGD, USD) | Yes | string |
+| `currency` | Payment currency (MYR, SGD, USD, THB, VND, IDR) | Yes | string |
 | `transactionId` | Your unique transaction identifier | Yes | string |
 | `description` | Payment description | No | string |
 | `returnUrl` | Success redirect URL | No | string |
 | `cancelUrl` | Cancel redirect URL | No | string |
 | `failureUrl` | Failure redirect URL | No | string |
 | `webhookUrl` | Webhook notification URL | No | string |
+| `dueDate` | Payment due date (ISO 8601 format) | No | string |
+| `timezone` | Timezone for due date | No | string |
+| `clientDetails` | Customer information object | No | array |
+| `purchaseDetails` | Product/purchase information object | No | array |
 | `metadata` | Additional custom data | No | array |
+
+#### Client Details Structure
+| Field | Description | Type |
+|-------|-------------|------|
+| `email` | Customer email address | string |
+| `phone` | Customer phone number | string |
+| `fullName` | Customer full name | string |
+
+#### Purchase Details Structure
+| Field | Description | Type |
+|-------|-------------|------|
+| `products` | Array of product objects | array |
+| `products[].name` | Product name | string |
+| `products[].price` | Product price in cents | integer |
+| `products[].quantity` | Product quantity | integer |
+| `products[].description` | Product description | string |
 
 ## Webhooks
 
-Chip-in Asia sends webhook notifications for payment status updates. Handle webhooks in your application:
+CHIP sends webhook notifications for payment status updates. This package supports both HMAC and RSA signature verification methods for enhanced security.
 
-### Basic Webhook Handler
+### Webhook Handler with HMAC Verification
 
 ```php
+use Omnipay\ChipInAsia\Message\WebhookRequest;
+use Omnipay\ChipInAsia\Exception\WebhookException;
+
 public function handleWebhook(Request $request)
 {
-    $gateway = Omnipay::create('ChipInAsia');
-    $gateway->setApiKey(config('payment.chip.api_key'));
+    try {
+        // Create webhook request with HMAC verification
+        $webhookRequest = new WebhookRequest(
+            $this->getHttpClient(),
+            $request
+        );
+        
+        // Set webhook secret for HMAC verification
+        $webhookRequest->setWebhookSecret(config('payment.chip.webhook_secret'));
+        
+        // Verify and parse webhook data
+        $data = $webhookRequest->getData();
+        
+        // Process the verified webhook data
+        $this->processWebhookData($data);
+        
+        return response('OK', 200);
+        
+    } catch (WebhookException $e) {
+        Log::error('Webhook verification failed: ' . $e->getMessage());
+        return response('Unauthorized', 401);
+    } catch (\Exception $e) {
+        Log::error('Webhook processing error: ' . $e->getMessage());
+        return response('Internal Server Error', 500);
+    }
+}
+```
 
-    // Verify webhook authenticity
-    $signature = $request->header('X-Signature');
-    $payload = $request->getContent();
-    $webhookSecret = config('payment.chip.webhook_secret');
-    
-    $expectedSignature = hash_hmac('sha256', $payload, $webhookSecret);
-    
-    if (!hash_equals($signature, $expectedSignature)) {
+### Webhook Handler with RSA Verification
+
+```php
+public function handleWebhookRSA(Request $request)
+{
+    try {
+        // Create webhook request with RSA verification
+        $webhookRequest = new WebhookRequest(
+            $this->getHttpClient(),
+            $request
+        );
+        
+        // Set public key for RSA verification
+        $publicKey = config('payment.chip.webhook_public_key');
+        $webhookRequest->setWebhookPublicKey($publicKey);
+        
+        // Verify and parse webhook data
+        $data = $webhookRequest->getData();
+        
+        // Process the verified webhook data
+        $this->processWebhookData($data);
+        
+        return response('OK', 200);
+        
+    } catch (WebhookException $e) {
+        Log::error('RSA webhook verification failed: ' . $e->getMessage());
         return response('Unauthorized', 401);
     }
+}
 
-    $purchaseId = $request->input('id');
+private function processWebhookData(array $data)
+{
+    $purchaseId = $data['id'];
+    $status = $data['status'];
     
-    $response = $gateway->completePurchase([
-        'transactionReference' => $purchaseId,
-    ])->send();
-
-    if ($response->isSuccessful()) {
+    // Get additional webhook response details
+    $webhookResponse = new \Omnipay\ChipInAsia\Message\WebhookResponse(null, $data);
+    
+    if ($webhookResponse->isPaymentSuccessful()) {
         // Update order status to paid
         Order::where('purchase_id', $purchaseId)->update([
             'status' => 'paid',
-            'payment_method' => $response->getPaymentMethod(),
-            'paid_at' => $response->getPaymentDate()
+            'payment_method' => $webhookResponse->getPaymentMethod(),
+            'payment_date' => $webhookResponse->getPaymentDate(),
+            'amount' => $webhookResponse->getAmount(),
+            'currency' => $webhookResponse->getCurrency()
         ]);
         
         // Send confirmation email
+        $order = Order::where('purchase_id', $purchaseId)->first();
         Mail::to($order->customer_email)->send(new PaymentConfirmation($order));
-    } elseif ($response->isCancelled()) {
+        
+    } elseif ($webhookResponse->isPaymentCancelled()) {
         // Handle cancelled payment
         Order::where('purchase_id', $purchaseId)->update(['status' => 'cancelled']);
+        
+    } elseif ($webhookResponse->isPaymentExpired()) {
+        // Handle expired payment
+        Order::where('purchase_id', $purchaseId)->update(['status' => 'expired']);
+        
+    } elseif ($webhookResponse->isPaymentPending()) {
+        // Handle pending payment
+        Order::where('purchase_id', $purchaseId)->update(['status' => 'pending']);
     }
-
-    return response('OK', 200);
 }
 ```
 
@@ -660,30 +807,49 @@ For support, please contact:
 
 ## Changelog
 
+### [2.0.0] - 2024-01-20
+#### Added
+- **Dual Signature Verification**: Support for both HMAC (webhook secret) and RSA (public key) signature verification
+- **Enhanced Currency Support**: Added THB, VND, IDR to existing MYR, SGD, USD support
+- **Advanced Purchase Options**: Due dates, timezones, creator agents, and enhanced metadata
+- **Modern PHP Support**: Updated to require PHP 8.0+ with strict typing
+- **Comprehensive Test Suite**: 56 tests with 111 assertions covering all functionality
+- **Enhanced Client/Purchase Details**: Structured data models for better API integration
+- **WebhookRequest/WebhookResponse Classes**: Dedicated classes for webhook handling
+- **WebhookVerifier Class**: Advanced signature verification with logging support
+- **Exception Hierarchy**: Specific exception classes for different error types
+
+#### Enhanced Features
+- **Multi-Currency Support**: MYR, SGD, USD, THB, VND, IDR
+- **Customer Information Handling**: Enhanced client details structure
+- **Redirect-based Payment Flow**: Improved with better error handling
+- **Real-time Payment Verification**: Enhanced webhook processing
+- **Test Mode Support**: Comprehensive testing capabilities
+- **Metadata Support**: Enhanced custom fields and product information
+- **Security Best Practices**: RSA signature verification and enhanced validation
+- **Laravel Integration**: Ready-to-use examples and service providers
+
+#### Breaking Changes
+- Minimum PHP version increased to 8.0
+- `card` parameter replaced with `clientDetails` for customer information
+- Enhanced webhook verification requires either `webhookSecret` or `webhookPublicKey`
+- Updated response methods for better type safety
+
 ### [1.0.0] - 2024-01-15
 #### Added
-- Initial release of Omnipay Chip-in Asia gateway
+- Initial release of Omnipay CHIP gateway
 - Support for purchase and completePurchase operations
-- Full integration with Chip-in Asia API
-- Comprehensive test suite
+- Full integration with CHIP API
+- Basic test suite
 - Laravel integration examples
 - Webhook handling support
 - Exception handling classes
-- Webhook signature verification
-
-#### Features
-- Multi-currency support (MYR, SGD, USD)
-- Customer information handling
-- Redirect-based payment flow
-- Real-time payment verification
-- Test mode support
-- Metadata support for custom fields
-- Comprehensive error handling
-- Security best practices
+- Basic webhook signature verification
 
 ### Future Releases
-- Enhanced error handling
-- Additional payment methods
+- Additional payment methods (QR codes, bank transfers)
+- Enhanced reporting and analytics
+- Subscription and recurring payment support
 - Improved webhook security
 - Recurring payment support
 - Refund functionality
