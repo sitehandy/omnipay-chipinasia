@@ -1,5 +1,6 @@
 {
     "name": "sitehandy/omnipay-chipinasia",
+    "version": "1.0.1",
     "type": "library",
     "description": "Chip-in Asia payment gateway for Omnipay payment processing library",
     "keywords": [
@@ -32,9 +33,12 @@
         }
     },
     "require": {
-        "php": "^7.4|^8.0|^8.1|^8.2|^8.3|^8.4",
+        "php": "^8.0|^8.1|^8.2|^8.3|^8.4",
         "omnipay/common": "^3.0",
-        "symfony/http-client": "^7.3"
+        "symfony/http-client": "^7.3",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "ext-openssl": "*"
     },
     "require-dev": {
         "omnipay/tests": "^4.0",
@@ -49,7 +53,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "3.0.x-dev"
+            "dev-master": "1.0.x-dev"
         }
     },
     "minimum-stability": "stable",

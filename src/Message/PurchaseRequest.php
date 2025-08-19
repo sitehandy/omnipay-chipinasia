@@ -131,34 +131,21 @@ class PurchaseRequest extends AbstractRequest
             ]);
             throw $e;
         }
-
+    
+        // Create purchase object matching official SDK structure
         $data = [
-            'success_redirect' => $this->getSuccessUrl(),
-            'cancel_redirect' => $this->getCancelUrl(),
-            'failure_redirect' => $this->getFailureUrl(),
-            'creator_agent' => 'Omnipay Chip-in Asia Gateway',
+            'brand_id' => $this->getBrandId(),
+            'success_redirect' => $this->getReturnUrl(),
+            'failure_redirect' => $this->getCancelUrl(),
+            'success_callback' => $this->getNotifyUrl(),
+            'creator_agent' => 'Omnipay-ChipInAsia/1.0.1',
             'reference' => $this->getReference() ?: $this->getTransactionId(),
             'platform' => 'api',
             'send_receipt' => $this->getSendReceipt() ?? true,
-            'send_receipt_email' => $this->getCard() ? $this->getCard()->getEmail() : null,
             'due_strict' => $this->getDueStrictly() ?? false,
-            'brand_id' => $this->getBrandId(),
-            'webhook_url' => $this->getWebhookUrl(),
-            'purchase' => [
-                'timezone' => 'Asia/Kuala_Lumpur',
-                'currency' => $this->getCurrency(),
-                'due' => time() + (24 * 60 * 60), // Default 24 hours from now
-                'products' => [
-                    [
-                        'name' => $this->getDescription() ?: 'Payment',
-                        'price' => (int) ($this->getAmount() * 100), // Convert to cents
-                        'quantity' => 1
-                    ]
-                ]
-            ]
         ];
-
-        // Add client information if available
+    
+        // Add client details (matching official SDK ClientDetails model)
         if ($this->getCard()) {
             $data['client'] = array_filter([
                 'email' => $this->getCard()->getEmail(),
@@ -169,7 +156,21 @@ class PurchaseRequest extends AbstractRequest
                 'brand_name' => $this->getCard()->getCompany(),
             ]);
         }
-
+    
+        // Add purchase details (matching official SDK PurchaseDetails model)
+        $data['purchase'] = [
+            'timezone' => 'Asia/Kuala_Lumpur',
+            'currency' => $this->getCurrency(),
+            'due' => time() + (24 * 60 * 60), // Default 24 hours from now
+            'products' => [
+                [
+                    'name' => $this->getDescription() ?: 'Payment',
+                    'price' => (int) ($this->getAmount() * 100), // Convert to cents
+                    'quantity' => 1
+                ]
+            ]
+        ];
+    
         return array_filter($data);
     }
 

@@ -14,7 +14,9 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 
     public function isRedirect()
     {
-        return isset($this->data['redirect_url']) || isset($this->data['payment_url']);
+        return isset($this->data['checkout_url']) || 
+               isset($this->data['redirect_url']) || 
+               isset($this->data['payment_url']);
     }
 
     public function getTransactionReference()
@@ -24,6 +26,11 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
 
     public function getRedirectUrl()
     {
+        // Priority order matching official SDK response
+        if (isset($this->data['checkout_url'])) {
+            return $this->data['checkout_url'];
+        }
+        
         if (isset($this->data['redirect_url'])) {
             return $this->data['redirect_url'];
         }
@@ -65,6 +72,22 @@ class PurchaseResponse extends AbstractResponse implements RedirectResponseInter
     public function getCode()
     {
         return isset($this->data['status']) ? $this->data['status'] : null;
+    }
+
+    /**
+     * Get purchase details from response
+     */
+    public function getPurchaseDetails()
+    {
+        return isset($this->data['purchase']) ? $this->data['purchase'] : null;
+    }
+
+    /**
+     * Get client details from response
+     */
+    public function getClientDetails()
+    {
+        return isset($this->data['client']) ? $this->data['client'] : null;
     }
 
     protected function getData()

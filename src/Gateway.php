@@ -22,6 +22,7 @@ class Gateway extends AbstractGateway
         parent::__construct($httpClient, $httpRequest);
         $this->logger = $logger ?: new NullLogger();
     }
+    
     public function getName()
     {
         return 'Chip-in Asia';
@@ -34,6 +35,7 @@ class Gateway extends AbstractGateway
             'brandId' => '',
             'testMode' => false,
             'webhookSecret' => '',
+            'endpoint' => null, // Allow custom endpoint override
         ];
     }
 
@@ -75,6 +77,16 @@ class Gateway extends AbstractGateway
     public function setWebhookSecret($value)
     {
         return $this->setParameter('webhookSecret', $value);
+    }
+
+    public function getEndpoint()
+    {
+        return $this->getParameter('endpoint');
+    }
+
+    public function setEndpoint($value)
+    {
+        return $this->setParameter('endpoint', $value);
     }
 
     public function purchase(array $parameters = [])
@@ -173,5 +185,21 @@ class Gateway extends AbstractGateway
         if (empty($this->getWebhookSecret())) {
             throw new InvalidRequestException('Webhook secret is required for webhook processing');
         }
+    }
+    
+    /**
+     * Get the appropriate API endpoint
+     */
+    public function getApiEndpoint()
+    {
+        // Allow custom endpoint override
+        if ($this->getEndpoint()) {
+            return rtrim($this->getEndpoint(), '/') . '/api/v1/';
+        }
+        
+        // Use standard endpoints based on test mode
+        return $this->getTestMode() 
+            ? 'https://gate.chip-in.asia/api/v1/'
+            : 'https://gate.chip-in.asia/api/v1/';
     }
 }
