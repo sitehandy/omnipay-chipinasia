@@ -787,7 +787,7 @@ Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 ## Security
 
-If you discover any security related issues, please email contact@sitehandy.com instead of using the issue tracker.
+If you discover any security related issues, please email support@sitehandy.com instead of using the issue tracker.
 
 ## Credits
 
@@ -802,7 +802,7 @@ The MIT License (MIT). Please see [License File](LICENSE) for more information.
 ## Support
 
 For support, please contact:
-- Email: contact@sitehandy.com
+- Email: support@sitehandy.com
 - GitHub Issues: [Create an issue](https://github.com/sitehandy/omnipay-chipinasia/issues)
 
 ## Changelog
