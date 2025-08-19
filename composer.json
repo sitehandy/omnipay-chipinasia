@@ -1,6 +1,6 @@
 {
     "name": "sitehandy/omnipay-chipinasia",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "type": "library",
     "description": "CHIP payment gateway for Omnipay - supports purchase creation, webhook verification, and transaction completion with RSA/HMAC signature validation",
     "keywords": [
